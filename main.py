@@ -26,14 +26,14 @@ def main():
                 unsafe_allow_html=True
                 )
 
-    st.set_page_config(page_title="GeoTraining",
+    st.set_page_config(page_title="GeoTrainr",
                        layout="wide",
                        initial_sidebar_state="auto",
                        menu_items={ "Get help": None,
                                     "Report a Bug": None,
                                     "About": None}
                        )
-    st.subheader("GeoTraining - Find the City on the Map")
+    st.subheader("GeoTrainr - Find the City on the Map")
     # st.subheader("Find the City on the Map")
 
     # RED = [180, 30, 30, 140]
