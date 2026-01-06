@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <title>pydeck</title>
+        <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
+    <script src='https://cdn.jsdelivr.net/npm/@deck.gl/jupyter-widget@~9.0.*/dist/index.js'></script>
+    <style>
+    body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#deck-container {
+  width: 100vw;
+  height: 100vh;
+}
+
+#deck-container canvas {
+  z-index: 1;
+  background: none;
+}
+    </style>
+  </head>
+  <body>
+    <div id="deck-container">
+    </div>
+  </body>
+  <script>
+    const container = document.getElementById('deck-container');
+    const jsonInput = {
+  "initialViewState": {
+    "latitude": 0,
+    "longitude": 0,
+    "pitch": 0,
+    "zoom": 0
+  },
+  "layers": [
+    {
+      "@@type": "ScatterplotLayer",
+      "autoHighlight": true,
+      "data": [
+        [
+          -89.064,
+          42.2596
+        ]
+      ],
+      "getFillColor": [
+        180,
+        0,
+        200,
+        20
+      ],
+      "getPosition": "@@=-",
+      "getRadius": 1000,
+      "id": "265f39e4-3074-43cb-a5cc-85af7cda8ae1",
+      "pickable": true
+    },
+    {
+      "@@type": "ScatterplotLayer",
+      "autoHighlight": true,
+      "data": [
+        [
+          -8.7124,
+          42.2314
+        ]
+      ],
+      "getFillColor": [
+        180,
+        30,
+        30,
+        100
+      ],
+      "getPosition": "@@=-",
+      "getRadius": 200000,
+      "id": "2bed658e-bf99-4109-a5f8-46b51c2fee18",
+      "pickable": false
+    },
+    {
+      "@@type": "ScatterplotLayer",
+      "autoHighlight": true,
+      "data": [
+        [
+          -8.7124,
+          42.2314
+        ]
+      ],
+      "getFillColor": [
+        180,
+        30,
+        30,
+        100
+      ],
+      "getPosition": "@@=-",
+      "getRadius": 133333.33333333334,
+      "id": "e0b1796a-5da0-4c61-99ad-2f59f17c0362",
+      "pickable": false
+    },
+    {
+      "@@type": "ScatterplotLayer",
+      "autoHighlight": true,
+      "data": [
+        [
+          -8.7124,
+          42.2314
+        ]
+      ],
+      "getFillColor": [
+        180,
+        30,
+        30,
+        100
+      ],
+      "getPosition": "@@=-",
+      "getRadius": 66666.66666666667,
+      "id": "02505880-e04e-42c9-8c6d-0236a7211fef",
+      "pickable": false
+    }
+  ],
+  "mapProvider": "carto",
+  "mapStyle": "https://kylemolinari.github.io/CustomMapStyle/custom.json",
+  "mapboxKey": "",
+  "views": [
+    {
+      "@@type": "MapView",
+      "controller": true
+    }
+  ]
+};
+    const tooltip = true;
+    const customLibraries = null;
+    const configuration = null;
+
+    const deckInstance = createDeck({
+                  container,
+      jsonInput,
+      tooltip,
+      customLibraries,
+      configuration
+    });
+
+  </script>
+</html>
