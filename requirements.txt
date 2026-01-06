@@ -1,4 +1,4 @@
-streamlit = 1.50.*
+streamlit
 pydeck
 pandas
 streamlit_shortcuts
