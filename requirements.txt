@@ -1,4 +1,5 @@
 pydeck
 pandas
+openpyxl
 streamlit==1.50.*
 streamlit_shortcuts==0.1.3
