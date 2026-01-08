@@ -40,7 +40,7 @@ Over time, seeing a city name should trigger an immediate *“I know where that 
 
 GeoTrainr lets you set filters to **customize your training sessions** and focus on specific weaknesses or regions:
 
-- **Continent** (e.g. Europe, South America, Asia)
+- **Continent** (e.g. Europe, South America, etc)
 - **Region** (e.g. Balkans, Scandinavia, etc)
 - **Writing System** (e.g. Cyrillic)
 - **Country**
