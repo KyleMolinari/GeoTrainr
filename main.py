@@ -4,14 +4,15 @@ GeoTrainr
 Find city name on google maps quickly
 
 TO DO:
+-option to have city names appear in native language/writing system
 -add next city name to chart fixed in top corner to allow user to play with map in full screen view
+-improve/add map styles
 '''
 
 import pydeck as pdk
 import pandas as pd
 import streamlit as st
 from streamlit_shortcuts import add_keyboard_shortcuts
-import json
 import time
 
 def main():
@@ -34,10 +35,6 @@ def main():
                                     "About": None}
                        )
     st.subheader("GeoTrainr - Find the City on the Map")
-    # st.subheader("Find the City on the Map")
-
-    # RED = [180, 30, 30, 140]
-    # GREEN = [30, 180, 30, 140]
 
     if 'loc' not in st.session_state:
         st.session_state.loc = None
@@ -54,10 +51,6 @@ def main():
                                                  columns=["city", "lat", "lng", "country", "population"])
     if 'mapstyle' not in st.session_state:
         st.session_state.mapstyle = "https://kylemolinari.github.io/CustomMapStyle/custom.json"
-        # st.session_state.mapstyle = "https://raw.githubusercontent.com/KyleMolinari/MapStyle/refs/heads/main/custom.json"
-
-        # #hosting locally - not working
-        # st.session_state.mapstyle = "http://127.0.0.1:9000/mapstyle2.json?dev=1"
     if 'lastguesscolour' not in st.session_state:
         if 'guesscolor' not in st.session_state:
             st.session_state.lastguesscolour = RED()
@@ -83,9 +76,10 @@ def main():
     with col2:
         minpop, maxpop = st.select_slider("City Population Range", options=poprange, value=(100000, 38000000))
     with col3: region = st.selectbox("Country/Group",
-                                     ["All", "Europe", "Europe (no RU, UA, TR)", "North America", "South America",
-                                      "Middle East",
-                                      "Africa", "Cyrillic", "Canada", "United States", "Mexico",
+                                     ["All", "Europe", "Europe (no UK, IE, RU, UA, TR)",
+                                      "EU Romance Language Countries", "North America", "South America", "Middle East",
+                                      "Africa", "Asia", "Southeast Asia", "Cyrillic", "Balkans", "Baltics",
+                                      "Scandinavia", "Canada", "United States", "Mexico",
                                       "Guatemala", "Panama", "Colombia", "Ecuador", "Peru", "Brazil",
                                       "Bolivia", "Argentina", "Uruguay", "Chile", "Denmark", "Iceland",
                                       "Ireland", "United Kingdom", "Portugal", "Spain", "France", "Andorra",
@@ -101,15 +95,14 @@ def main():
                                       "Thailand", "Cambodia", "Laos", "Malaysia", "Singapore", "Indonesia",
                                       "Philippines", "Taiwan", "Korea, South", "Japan", "Australia",
                                       "New Zealand", "Kyrgyzstan", "Kazakhstan", "Mongolia",
-                                      "Dominican Republic", "Oman", "Paraguay", "Costa Rica", "Cyprus"])
+                                      "Dominican Republic", "Oman", "Paraguay", "Costa Rica", "Cyprus",
+                                      "Vietnam", "Nepal", "Bosnia and Herzegovina", "Liechtenstein", "Monaco"])
     with col1:
         st.button("Randomize City (or press 1)",
                          on_click=newcity(countries=region, min=minpop, max=maxpop))
-        # st.button("Randomize City", on_click=newcity(countries=region, min=minpop, max=maxpop))
     with col4:
         st.session_state.mapstyle = st.selectbox("Map Style",getmapstyles().keys(), format_func=mapstylenameconverter)
     with col5:
-        st.write("\n")
         st.write("\n")
         st.write("\n")
         st.write(str(st.session_state.numcities) + " Cities from " + str(st.session_state.numcountries) +
@@ -146,12 +139,11 @@ def main():
                        get_fill_color=st.session_state.lastguesscolour,
                        pickable=False)
 
-    layer5 = pdk.Layer('')
 
     deck = pdk.Deck(
                     # map_provider="mapbox",
                     # map_style='mapbox://styles/mapbox/streets-v12', # This one used to be good but doesnt work anymore??
-                    map_style=st.session_state.mapstyle, #using default custom map url via session state
+                    map_style=st.session_state.mapstyle,
                     initial_view_state=pdk.ViewState(
                         latitude=st.session_state.lat,
                         longitude=st.session_state.long,
@@ -173,12 +165,11 @@ def main():
     st.session_state.prevloc = st.session_state.loc
     st.session_state.prevcity = st.session_state.city
 
-    time.sleep(0.5)
+    #sometimes st session state glitches which results in the wrong lastguesscolour and adding this delay helps
+    time.sleep(1)
 
 def handle_selection():
-    # st.session_state.lastguesscolour = [30, 180, 30, 140] #green
-    st.session_state.guesscolour = GREEN() #green
-    # st.session_state.lastguesscolour = st.session_state.guesscolour
+    st.session_state.guesscolour = GREEN()
 
 def newcity(countries="All", min=100000, max=38000000):
     cities = load_cities(countries, min, max)
@@ -193,17 +184,16 @@ def newcity(countries="All", min=100000, max=38000000):
     st.session_state.loc = [[city.lng.iloc[0], city.lat.iloc[0]]]
 
     st.session_state.lastguesscolour = st.session_state.guesscolour
-    st.session_state.guesscolour = RED() #red
+    st.session_state.guesscolour = RED()
 
 @st.cache_data
 def getmapstyles():
     url2name = {
-                # "http://127.0.0.1:9000/mapstyle2.json?dev=1": "mapstyle2", #hosting locally not loading in pydeck
                 "https://kylemolinari.github.io/CustomMapStyle/custom.json": "custom",
                 "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json": "voyager",
                 "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json": "positron",
                 "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json": "dark matter",
-                "https://tiles.stadiamaps.com/styles/stamen_terrain.json": "terrain",
+                # "https://tiles.stadiamaps.com/styles/stamen_terrain.json": "terrain", # this one works when run locally but not when deployed on streamlit community cloud :/ - might need API token which i dont want to use on here
                 }
 
     return url2name
@@ -223,24 +213,37 @@ def load_cities(countries="All", minpop=1000000, maxpop=100000000):
                           "Qatar", "United Arab Emirates", "India", "Sri Lanka", "Bangladesh", "Bhutan",
                           "Thailand", "Cambodia", "Laos", "Malaysia", "Singapore", "Indonesia", "Philippines",
                           "Taiwan", "Korea, South", "Japan", "Australia", "New Zealand", "Kyrgyzstan",
-                          "Kazakhstan", "Mongolia", "Dominican Republic", "Oman", "Paraguay", "Costa Rica", "Cyprus"]
+                          "Kazakhstan", "Mongolia", "Dominican Republic", "Oman", "Paraguay", "Costa Rica", "Cyprus",
+                          "Vietnam", "Nepal", "Bosnia and Herzegovina", "Liechtenstein", "Monaco"]
     EUcountries = ["Denmark", "Iceland", "Ireland", "United Kingdom", "Portugal", "Spain", "France", "Andorra",
                    "Belgium", "Netherlands", "Luxembourg", "Germany", "Norway", "Sweden", "Finland", "Estonia",
                    "Latvia", "Lithuania", "Poland", "Ukraine", "Russia", "Czechia", "Slovakia", "Hungary",
                    "Switzerland", "Austria","Italy", "San Marino", "Malta", "Slovenia", "Croatia", "Romania",
-                   "Serbia", "Montenegro","Albania", "North Macedonia", "Greece", "Turkey", "Bulgaria", "Cyprus"]
-    EUselectivecountries = ["Denmark", "Iceland", "Ireland", "United Kingdom", "Portugal", "Spain", "France",
+                   "Serbia", "Montenegro","Albania", "North Macedonia", "Greece", "Turkey", "Bulgaria", "Cyprus",
+                   "Bosnia and Herzegovina", "Liechtenstein", "Monaco"]
+    EUselectivecountries = ["Denmark", "Iceland", "Portugal", "Spain", "France",
                             "Andorra", "Belgium", "Netherlands", "Luxembourg", "Germany", "Norway", "Sweden",
                             "Finland", "Estonia", "Latvia", "Lithuania", "Poland", "Czechia", "Slovakia",
                             "Hungary", "Switzerland", "Austria","Italy", "San Marino", "Malta", "Slovenia",
                             "Croatia", "Romania", "Serbia", "Montenegro","Albania", "North Macedonia", "Greece",
-                            "Bulgaria"]
+                            "Bulgaria", "Cyprus", "Bosnia and Herzegovina", "Liechtenstein", "Monaco"]
+    EUromancecountries = ["France", "Italy", "Spain", "Portugal", "Monaco", "San Marino", "Andorra", "Switzerland",
+                          "Belgium", "Luxembourg"]
     NAcountries = ["Canada", "United States", "Mexico", "Guatemala", "Panama", "Costa Rica"]
     SAcountries = ["Colombia", "Ecuador", "Peru", "Brazil", "Bolivia", "Argentina", "Uruguay", "Chile", "Paraguay"]
     Africacountries = ["Tunisia", "Senegal", "Ghana", "Nigeria", "Uganda", "Rwanda", "Kenya", "Botswana",
                        "South Africa", "Lesotho", "Eswatini", "Madagascar"]
+    Asiacountries = ["India", "Sri Lanka", "Bangladesh", "Bhutan", "Nepal", "Thailand", "Cambodia", "Laos", "Vietnam",
+                     "Malaysia", "Singapore", "Indonesia", "Philippines", "Taiwan", "Japan", "Korea, South", "Mongolia",
+                     "Kazakhstan", "Kyrgyzstan"]
+    SouthEastAsiacountries = ["Thailand", "Cambodia", "Laos", "Vietnam", "Malaysia", "Singapore",
+                              "Indonesia", "Philippines"]
+    Balkancountries = ["Albania", "Bosnia and Herzegovina", "Bulgaria", "Croatia", "Greece", "Montenegro",
+                       "North Macedonia", "Serbia"]
+    Balticcountries = ["Estonia", "Latvia", "Lithuania"]
+    Scandinaviacountries = ["Norway", "Sweden", "Finland", "Denmark", "Iceland"]
     MEcountries = ["Israel", "Jordan", "Lebanon", "Qatar", "United Arab Emirates", "Oman"]
-    Cyrilliccountries = ["Ukraine", "Russia", "Montenegro", "North Macedonia", "Bulgaria", "Kyrgyzstan",
+    Cyrilliccountries = ["Ukraine", "Russia", "Montenegro", "Serbia", "North Macedonia", "Bulgaria", "Kyrgyzstan",
                          "Kazakhstan", "Mongolia"]
     setmapview = False
     if countries == "All":
@@ -255,12 +258,18 @@ def load_cities(countries="All", minpop=1000000, maxpop=100000000):
         st.session_state.long = 18.74
         st.session_state.zoom = 2
         st.session_state.radius = 50000
-    elif countries == "Europe (no RU, UA, TR)":
+    elif countries == "Europe (no UK, IE, RU, UA, TR)":
         countries = EUselectivecountries
         st.session_state.lat = 52.52
         st.session_state.long = 13.40
         st.session_state.zoom = 2.3
         st.session_state.radius = 50000
+    elif countries == "EU Romance Language Countries":
+        countries = EUromancecountries
+        st.session_state.lat = 45.76
+        st.session_state.long = 4.84
+        st.session_state.zoom = 4
+        st.session_state.radius = 15000
     elif countries == "North America":
         countries = NAcountries
         st.session_state.lat = 46.80
@@ -285,6 +294,36 @@ def load_cities(countries="All", minpop=1000000, maxpop=100000000):
         st.session_state.long = 46.68
         st.session_state.zoom = 3
         st.session_state.radius = 20000
+    elif countries == 'Asia':
+        countries = Asiacountries
+        st.session_state.lat = 29.65
+        st.session_state.long = 91.14
+        st.session_state.zoom = 2.5
+        st.session_state.radius = 50000
+    elif countries == 'Southeast Asia':
+        countries = SouthEastAsiacountries
+        st.session_state.lat = 4.42
+        st.session_state.long = 114.02
+        st.session_state.zoom = 3.5
+        st.session_state.radius = 30000
+    elif countries == "Balkans":
+        countries = Balkancountries
+        st.session_state.lat = 42.67
+        st.session_state.long = 21.16
+        st.session_state.zoom = 4.5
+        st.session_state.radius = 20000
+    elif countries == "Baltics":
+        countries = Balticcountries
+        st.session_state.lat = 56.97
+        st.session_state.long = 24.11
+        st.session_state.zoom = 5.4
+        st.session_state.radius = 8000
+    elif countries == "Scandinavia":
+        countries = Scandinaviacountries
+        st.session_state.lat = 64.39
+        st.session_state.long = 17.31
+        st.session_state.zoom = 3.5
+        st.session_state.radius = 15000
     elif countries == "Cyrillic":
         countries = Cyrilliccountries
         st.session_state.lat = 55.00
@@ -317,12 +356,15 @@ def load_cities(countries="All", minpop=1000000, maxpop=100000000):
 
     return df
 
+@st.cache_data
 def mapstylenameconverter(url):
     return getmapstyles().get(url, "Unknown")
 
+@st.cache_data
 def RED():
     return [180, 30, 30, 100]
 
+@st.cache_data
 def GREEN():
     return [30, 180, 30, 100]
 
