@@ -78,7 +78,7 @@ GeoTrainr works best as:
 
 ---
 
-## Example
+## 📍 Example
 Set the filters to European cities with a population above 100,000 - Amsterdam was selected:
 
 ![Amsterdam Randomly Generated](https://i.imgur.com/eFpzo9S.png)
