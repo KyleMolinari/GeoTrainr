@@ -60,8 +60,7 @@ This makes it easy to:
 - Fully interactive, click-based map interface  
 - Instant feedback with red target markers  
 - Keyboard shortcut support (`1` to skip)  
-- Powerful filtering for targeted training  
-- Clean, distraction-free UI focused on learning
+- Customized filtering for targeted training  
 
 Coming Soon:
 - Display city names in their native language/writing system (e.g. Санкт-Петербург instead of Saint Petersburg)
@@ -74,7 +73,7 @@ Coming Soon:
 
 GeoTrainr works best as:
 - A **warm-up tool** before playing GeoGuessr
-- A **daily training drill** (5–15 minutes)
+- A **daily training drill**
 - A way to **systematically improve city recognition** by region
 
 ---
