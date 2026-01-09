@@ -5,7 +5,6 @@ Find city name on google maps quickly
 
 TO DO:
 -option to have city names appear in native language/writing system
--add next city name to chart fixed in top corner to allow user to play with map in full screen view
 -improve/add map styles
 '''
 
@@ -13,19 +12,55 @@ import pydeck as pdk
 import pandas as pd
 import streamlit as st
 from streamlit_shortcuts import add_keyboard_shortcuts
+from streamlit_js_eval import streamlit_js_eval
+import unicodedata
 import time
 
 def main():
     st.markdown("""
         <style>
         .block-container {
-            padding-top: 2rem; /* Adjust this value (e.g., 0rem for no space) */
+            padding-top: 0rem; /* Adjust this value (e.g., 0rem for no space) */
             padding-bottom: 0rem;
         }
         </style>
         """,
                 unsafe_allow_html=True
                 )
+    st.markdown(
+        """
+        <style>
+        /* Hide Streamlit UI */
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        section[data-testid="stSidebar"] {display: none;}
+
+        /* Remove padding/margins */
+        .block-container {
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+        }
+
+        /* Force pydeck to fill screen */
+        div[data-testid="stPydeckChart"] {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9998;
+            background: white;
+        }
+
+        /* Prevent scrolling */
+        body {
+            overflow: hidden;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.set_page_config(page_title="GeoTrainr",
                        layout="wide",
@@ -34,7 +69,6 @@ def main():
                                     "Report a Bug": None,
                                     "About": None}
                        )
-    st.subheader("GeoTrainr - Find the City on the Map")
 
     if 'loc' not in st.session_state:
         st.session_state.loc = None
@@ -45,7 +79,7 @@ def main():
     if 'numcountries' not in st.session_state:
         st.session_state.numcountries = None
     if 'radius' not in st.session_state:
-        st.session_state.radius = 200000
+        st.session_state.radius = 50000
     if 'prevcity' not in st.session_state:
         st.session_state.prevcity = pd.DataFrame([["N/A", "N/A", "N/A", "N/A", "0"]],
                                                  columns=["city", "lat", "lng", "country", "population"])
@@ -59,23 +93,40 @@ def main():
     if 'guesscolour' not in st.session_state:
         st.session_state.guesscolour = RED()
     if 'lat' not in st.session_state:
-        st.session_state.lat = 0
+        st.session_state.lat = 52.52
     if 'long' not in st.session_state:
-        st.session_state.long = 0
+        st.session_state.long = 13.40
     if 'zoom' not in st.session_state:
-        st.session_state.zoom = 0
+        st.session_state.zoom = 2.3
+    if 'region' not in st.session_state:
+        st.session_state.region = "Europe (no UK, IE, RU, UA, TR)"
+    if 'minpop' not in st.session_state:
+        st.session_state.minpop = None
+    if 'maxpop' not in st.session_state:
+        st.session_state.maxpop = None
+    if "fullscreen" not in st.session_state:
+        st.session_state.fullscreen = False
+    if "pagewidth" not in st.session_state:
+        st.session_state.pagewidth = streamlit_js_eval(js_expressions='window.innerWidth')
+    if "pageheight" not in st.session_state:
+        st.session_state.pageheight = streamlit_js_eval(js_expressions='window.parent.innerHeight')
 
 
+    if not st.session_state.fullscreen:
+        st.subheader("GeoTrainr - Find the City on the Map")
 
-
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     poprange = []
     for i in range(761):
         poprange.append(50000*i)
 
-    with col2:
-        minpop, maxpop = st.select_slider("City Population Range", options=poprange, value=(100000, 38000000))
-    with col3: region = st.selectbox("Country/Group",
+
+    # Have to do these in a weird order for references to work
+    if not st.session_state.fullscreen:
+        with col2:
+            st.session_state.minpop, st.session_state.maxpop = st.select_slider("City Population Range", options=poprange, value=(100000, 38000000))
+        with col3:
+            st.session_state.region = st.selectbox("Country/Group",
                                      ["All", "Europe", "Europe (no UK, IE, RU, UA, TR)",
                                       "EU Romance Language Countries", "North America", "South America", "Middle East",
                                       "Africa", "Asia", "Southeast Asia", "Cyrillic", "Balkans", "Baltics",
@@ -96,19 +147,85 @@ def main():
                                       "Philippines", "Taiwan", "Korea, South", "Japan", "Australia",
                                       "New Zealand", "Kyrgyzstan", "Kazakhstan", "Mongolia",
                                       "Dominican Republic", "Oman", "Paraguay", "Costa Rica", "Cyprus",
-                                      "Vietnam", "Nepal", "Bosnia and Herzegovina", "Liechtenstein", "Monaco"])
-    with col1:
-        st.button("Randomize City (or press 1)",
-                         on_click=newcity(countries=region, min=minpop, max=maxpop))
-    with col4:
-        st.session_state.mapstyle = st.selectbox("Map Style",getmapstyles().keys(), format_func=mapstylenameconverter)
-    with col5:
-        st.write("\n")
-        st.write("\n")
-        st.write(str(st.session_state.numcities) + " Cities from " + str(st.session_state.numcountries) +
+                                      "Vietnam", "Nepal", "Bosnia and Herzegovina", "Liechtenstein", "Monaco"],
+                                                   index=2)
+        with col4:
+            st.session_state.mapstyle = st.selectbox("Map Style",getmapstyles().keys(), format_func=mapstylenameconverter)
+        with col6:
+            st.button("Randomize City (or press 1)",
+                  on_click=newcity(countries=st.session_state.region, min=st.session_state.minpop, max=st.session_state.maxpop))
+            st.button("⛶ Fullscreen (or press 2)", on_click=togglefullscreen)
+            add_keyboard_shortcuts({'1': 'Randomize City (or press 1)', })
+            add_keyboard_shortcuts({'2': "⛶ Fullscreen (or press 2)", })
+        with col5:
+            st.write("\n")
+            st.write("\n")
+            st.write(str(st.session_state.numcities) + " Cities from " + str(st.session_state.numcountries) +
                  " countries fit the criteria")
+        with col1:
+            st.subheader("\t"+st.session_state.city.city.iloc[0])
 
-    add_keyboard_shortcuts({ '1': 'Randomize City (or press 1)', })
+
+    if st.session_state.fullscreen:
+        newcity(countries=st.session_state.region, min=st.session_state.minpop, max=st.session_state.maxpop)
+
+        st.markdown(
+            """
+            <style>
+            /* Hide header, footer, sidebar */
+            header, footer { visibility: hidden !important; }
+            section[data-testid="stSidebar"] { display: none !important; }
+            div[data-testid="stForm"], div[data-testid="stExpander"], div[data-testid="stLayoutWrapper"], div[data-testid="stHeader"], div[data-testid="stToolbar"] { display: none !important; }
+
+            /* Hide all buttons */
+            button, div.stButton > button { display: none !important; }
+
+            /* Hide sliders, select_sliders, selectboxes, radio, checkboxes */
+            div[data-baseweb="select"],
+            div[data-baseweb="slider"],
+            div[data-baseweb="select-slider"],
+            div[data-baseweb="radio"],
+            div[data-baseweb="checkbox"] { display: none !important; }
+
+            /* Hide widget labels */
+            label[data-testid="stWidgetLabel"] { display: none !important; }
+
+            /* Hide headers/subheaders */
+            .block-container h1, .block-container h2, .block-container h3 { display: none !important; }
+
+            /* Hide st.write outputs except overlay */
+            .stText:not(.map-overlay *) { display: none !important; }
+
+            /* Fullscreen pydeck map */
+            div[data-testid="stPydeckChart"] {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 9998 !important;
+                background: white !important;
+                pointer-events: all !important;
+            }
+
+            /* Overlay */
+            .map-overlay {
+                position: fixed;
+                top: 12px;
+                left: 12px;
+                z-index: 9999;
+                background: rgba(255,255,255,0.9);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-weight: 600;
+                pointer-events: none;
+            }
+
+            body { overflow: hidden; }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
 
     layer1 = pdk.Layer( 'ScatterplotLayer',
                         data=st.session_state.loc,
@@ -139,6 +256,42 @@ def main():
                        get_fill_color=st.session_state.lastguesscolour,
                        pickable=False)
 
+    if st.session_state.fullscreen and st.session_state.prevcity.city.iloc[0] != 'N/A':
+
+        offset_m = st.session_state.radius + 5000
+        offset_deg = offset_m / 111320
+
+        city_data = [
+            {
+                "position": [row["lng"], row["lat"] + offset_deg],
+                "text": f"{remove_accents(row['city'])}, {remove_accents(row['country'])}"
+            }
+            for _, row in st.session_state.prevcity.iterrows()
+        ]
+
+        label_layer = pdk.Layer(
+            "TextLayer",
+            data=city_data,
+            get_position="position",
+            get_text="text",
+            get_size=12,
+            get_color=st.session_state.lastguesscolour[:3] + [255], # same colour but opaque
+            pickable=False
+        )
+
+
+
+    else:
+        label_layer = pdk.Layer(
+            "TextLayer",
+            data=[],
+            get_position="position",
+            get_text="text",
+            get_size=12,
+            get_color=st.session_state.lastguesscolour,
+            pickable=False
+        )
+
 
     deck = pdk.Deck(
                     # map_provider="mapbox",
@@ -149,12 +302,53 @@ def main():
                         longitude=st.session_state.long,
                         zoom=st.session_state.zoom,
                         pitch=0),
-                    layers=[layer1, layer2, layer3, layer4]
+                    layers=[layer1, layer2, layer3, layer4, label_layer]
                     )
 
-    deck.to_html("map.html")
+    # deck.to_html("map.html")
 
-    st.pydeck_chart(deck, height=700, use_container_width=True, on_select=handle_selection)
+    if st.session_state.fullscreen:
+        # Output map HTML inside a container div
+        st.markdown(
+            """
+            <div id="fullscreen-map-container">
+            </div>
+            <style>
+            /* Make the pydeck chart fill the entire viewport */
+            #fullscreen-map-container > div[data-testid="stPydeckChart"] {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 9998 !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.pydeck_chart(deck, height=st.session_state.pageheight, use_container_width=True, on_select=handle_selection)
+
+        st.markdown(
+            f'<div class="map-overlay">🌍 Find: <strong>{st.session_state.city.city.iloc[0]}</strong></div>',
+            unsafe_allow_html=True
+        )
+    else:
+        # safe fallback values
+        st.session_state.pagewidth = 1200
+        st.session_state.pageheight = 500
+
+        st.pydeck_chart(deck, height=st.session_state.pageheight, width=st.session_state.pagewidth,
+                        use_container_width=not st.session_state.fullscreen, on_select=handle_selection)
+
+    # if fullscreen need map to display before these buttons but still need them below map for functionality
+    # (even though they will be invisible)
+    if st.session_state.fullscreen:
+        st.button("Randomize City (or press 1)")
+        st.button("⛶ Fullscreen (or press 2)", on_click=togglefullscreen)
+        add_keyboard_shortcuts({'1': 'Randomize City (or press 1)', })
+        add_keyboard_shortcuts({'2': "⛶ Fullscreen (or press 2)", })
+
 
     lastcitystring = "Previous city: " + st.session_state.prevcity["city"].iloc[0] + ", " + st.session_state.prevcity["country"].iloc[0] + ". Population: " + f'{int(st.session_state.prevcity["population"].iloc[0]):,}'
     if st.session_state.lastguesscolour == GREEN():
@@ -165,20 +359,39 @@ def main():
     st.session_state.prevloc = st.session_state.loc
     st.session_state.prevcity = st.session_state.city
 
+    st.session_state.pagewidth = streamlit_js_eval(js_expressions='window.innerWidth', key='PAGE_WIDTH')
+    st.session_state.pageheight = streamlit_js_eval(js_expressions='window.parent.innerHeight', key='PAGE_HEIGHT')
+
     #sometimes st session state glitches which results in the wrong lastguesscolour and adding this delay helps
     time.sleep(1)
+
+def togglefullscreen():
+    st.session_state.fullscreen = not st.session_state.fullscreen
+    del st.session_state['prevcity']
+    del st.session_state['prevloc']
+
 
 def handle_selection():
     st.session_state.guesscolour = GREEN()
 
-def newcity(countries="All", min=100000, max=38000000):
+
+def remove_accents(text):
+    # Replace Vietnamese Đ/đ
+    text = text.replace('Đ', 'D').replace('đ', 'd')
+
+    # Normalize to NFD, remove diacritics
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', text)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+def newcity(countries="Europe (no UK, IE, RU, UA, TR)", min=100000, max=38000000):
     cities = load_cities(countries, min, max)
 
     st.session_state.numcities = cities.shape[0]
     st.session_state.numcountries = cities["country"].nunique()
 
     city = cities.sample(n=1)
-    st.subheader(city.city.iloc[0])
 
     st.session_state.city = city
     st.session_state.loc = [[city.lng.iloc[0], city.lat.iloc[0]]]
@@ -199,7 +412,7 @@ def getmapstyles():
     return url2name
 
 @st.cache_data
-def load_cities(countries="All", minpop=1000000, maxpop=100000000):
+def load_cities(countries="Europe (no UK, IE, RU, UA, TR)", minpop=1000000, maxpop=100000000):
     geoguessrcountries = ["Canada", "United States", "Mexico", "Guatemala", "Panama", "Colombia",
                           "Ecuador", "Peru", "Brazil", "Bolivia", "Argentina", "Uruguay", "Chile",
                           "Denmark", "Iceland", "Ireland", "United Kingdom", "Portugal", "Spain",
