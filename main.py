@@ -305,8 +305,6 @@ def main():
                     layers=[layer1, layer2, layer3, layer4, label_layer]
                     )
 
-    # deck.to_html("map.html")
-
     if st.session_state.fullscreen:
         # Output map HTML inside a container div
         st.markdown(
@@ -376,8 +374,8 @@ def handle_selection():
 
 
 def remove_accents(text):
-    # Replace Vietnamese Đ/đ
-    text = text.replace('Đ', 'D').replace('đ', 'd')
+    # Replace chars that arent fixed by unicodedata.normalize() : Vietnamese Đ/đ, Polish Ł, etc
+    text = text.replace('Đ', 'D').replace('đ', 'd').replace('Ł', 'L').replace('ł', 'l')
 
     # Normalize to NFD, remove diacritics
     return ''.join(
